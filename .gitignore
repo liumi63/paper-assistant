@@ -8,3 +8,6 @@ __pycache__/
 
 # VS Code 配置文件
 .vscode/
+
+# openai API 密钥
+.env
