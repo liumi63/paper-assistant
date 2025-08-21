@@ -1,0 +1,18 @@
+/* Reset Vite template layout */
+html, body, #app { height: 100%; }
+
+body {
+  margin: 0 !important;
+  display: block !important;        /* 取消 grid 居中 */
+  min-width: 0 !important;
+  min-height: 100% !important;
+  place-items: initial !important;   /* 防止某些浏览器保留居中 */
+}
+
+#app {
+  width: 100% !important;
+  max-width: none !important;        /* 取消 1280px 限宽 */
+  margin: 0 !important;              /* 不要用 0 auto，会继续居中 */
+  padding: 0 !important;             /* 去掉两侧内边距 */
+  text-align: initial !important;
+}
