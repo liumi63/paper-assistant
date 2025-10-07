@@ -1,8 +1,10 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { saveUser, saveSessionUser, loadUser } from '../utils/auth'
 
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   email: '',
@@ -11,14 +13,78 @@ const form = ref({
 })
 
 const statusMessage = ref('')
+const statusType = ref('info')
+const isSubmitting = ref(false)
 
-const handleSubmit = () => {
-  statusMessage.value = '待接入后端登录接口。当前仅展示表单。'
+const handleSubmit = async () => {
+  try {
+    isSubmitting.value = true
+    statusMessage.value = ''
+
+    const email = form.value.email.trim()
+
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password: form.value.password,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null)
+      statusType.value = 'danger'
+      statusMessage.value = error?.detail || '登录失败，请稍后再试。'
+      return
+    }
+
+    const data = await response.json()
+    statusType.value = 'success'
+    statusMessage.value = `欢迎回来，${data.full_name || data.email}！`
+    if (form.value.remember) {
+      saveUser(data)
+    } else {
+      saveSessionUser(data)
+    }
+
+    const preferred = data.is_admin ? '/admin' : '/dashboard'
+    const redirectTarget =
+      typeof route.query.redirect === 'string' && route.query.redirect ? route.query.redirect : preferred
+    setTimeout(() => {
+      router.push(redirectTarget)
+    }, 800)
+  } catch (error) {
+    statusType.value = 'danger'
+    statusMessage.value = '网络请求发生错误，请检查后端服务是否可用。'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const goToRegister = () => {
   router.push('/register')
 }
+
+const alertClass = computed(() => {
+  switch (statusType.value) {
+    case 'success':
+      return 'alert alert-success'
+    case 'danger':
+      return 'alert alert-danger'
+    default:
+      return 'alert alert-info'
+  }
+})
+
+onMounted(() => {
+  const saved = loadUser()
+  if (saved) {
+    router.replace(route.query.redirect || '/dashboard')
+  }
+})
 </script>
 
 <template>
@@ -37,8 +103,9 @@ const goToRegister = () => {
               id="loginEmail"
               v-model="form.email"
               class="form-control"
-              type="email"
-              placeholder="name@example.com"
+              type="text"
+              placeholder="name@example.com 或管理员账号"
+              autocomplete="username"
               required
             />
           </div>
@@ -72,12 +139,12 @@ const goToRegister = () => {
             </label>
           </div>
 
-          <button class="btn btn-primary w-100" type="submit">
-            登录
+          <button class="btn btn-primary w-100" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? '登录中...' : '登录' }}
           </button>
         </form>
 
-        <p v-if="statusMessage" class="alert alert-info mt-3 mb-0">
+        <p v-if="statusMessage" :class="`${alertClass} mt-3 mb-0`">
           {{ statusMessage }}
         </p>
 

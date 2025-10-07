@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from backend import bootstrap, models  # noqa: F401  # ensure models are registered
 from backend.config import get_settings
-from backend.routers import auth
+from backend.database import Base, engine
+from backend.routers import admin, auth
 
 settings = get_settings()
 
@@ -22,5 +24,11 @@ async def health_check():
     return {"status": "ok", "app": settings.app_name}
 
 
+# Ensure tables exist for the configured models
+Base.metadata.create_all(bind=engine)
+bootstrap.ensure_schema()
+bootstrap.ensure_admin_user()
+
 # Register routers
 app.include_router(auth.router)
+app.include_router(admin.router)

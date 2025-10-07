@@ -7,70 +7,87 @@ database logic once user models are defined.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.orm import Session
 from typing import Optional
 
-from backend.database import SessionLocal
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr, Field
+from pydantic import ConfigDict
+from sqlalchemy.orm import Session
+
+from backend.database import get_db
+from backend.models import User
+from backend.security import hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def get_db():
-    """Provide a SQLAlchemy session for request handlers."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     full_name: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
-@router.post("/register", summary="注册新用户")
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int = Field(..., description="数据库中的用户 ID")
+    email: str
+    full_name: Optional[str] = None
+    is_admin: bool = False
+
+
+@router.post(
+    "/register",
+    summary="注册新用户",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    """
-    接收注册请求的占位实现。
+    normalized_email = payload.email.strip().lower()
+    existing = db.query(User).filter(User.email == normalized_email).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被注册")
 
-    TODO:
-        * 添加密码哈希与验证
-        * 检查邮箱唯一性并写入数据库
-        * 返回认证令牌
-    """
-    # TODO: replace with database logic
-    del db  # prevent unused parameter warning while the handler is a stub
-    return {
-        "message": "注册接口待实现，当前仅验证请求结构。",
-        "email": payload.email,
-        "full_name": payload.full_name,
-    }
+    user = User(
+        email=normalized_email,
+        full_name=payload.full_name,
+        hashed_password=hash_password(payload.password),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return UserResponse(
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        is_admin=user.is_admin,
+    )
 
 
-@router.post("/login", summary="用户登录")
+@router.post(
+    "/login",
+    summary="用户登录",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    """
-    接收登录请求的占位实现。
+    identifier = payload.email.strip().lower()
+    if not identifier:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱或密码错误")
 
-    TODO:
-        * 校验用户存在
-        * 验证密码并返回 JWT / 会话
-    """
-    # TODO: replace with database logic
-    del db
-    if payload.password == "":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
+    user = db.query(User).filter(User.email == identifier).first()
+    if not user or not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱或密码错误")
 
-    return {
-        "message": "登录接口待实现，当前仅验证请求结构。",
-        "email": payload.email,
-    }
+    return UserResponse(
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        is_admin=user.is_admin,
+    )

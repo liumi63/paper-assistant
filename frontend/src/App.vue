@@ -1,5 +1,43 @@
 <script setup>
-// 根组件仅做全局框架：Header + <router-view/> + Footer
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { clearUser, loadUser } from './utils/auth'
+
+const router = useRouter()
+const currentUser = ref(loadUser())
+
+const syncUser = () => {
+  currentUser.value = loadUser()
+}
+
+const handleLogout = () => {
+  clearUser()
+  router.push('/login')
+}
+
+const isAuthenticated = computed(() => Boolean(currentUser.value))
+const isAdmin = computed(() => Boolean(currentUser.value?.is_admin))
+
+const displayName = computed(() => {
+  if (!currentUser.value) return ''
+  const name = currentUser.value.full_name || currentUser.value.email
+  return name.length > 18 ? `${name.slice(0, 18)}…` : name
+})
+
+const userInitial = computed(() => {
+  if (!currentUser.value) return ''
+  const name = currentUser.value.full_name || currentUser.value.email || ''
+  return name.trim().charAt(0).toUpperCase()
+})
+
+onMounted(() => {
+  window.addEventListener('auth-changed', syncUser)
+  syncUser()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('auth-changed', syncUser)
+})
 </script>
 
 <template>
@@ -38,10 +76,36 @@
             <li class="nav-item">
               <router-link to="/chat" class="nav-link px-3" exact-active-class="active">Chat</router-link>
             </li>
+            <li v-if="isAuthenticated" class="nav-item">
+              <router-link to="/dashboard" class="nav-link px-3" exact-active-class="active">
+                Dashboard
+              </router-link>
+            </li>
+            <li v-if="isAdmin" class="nav-item">
+              <router-link to="/admin" class="nav-link px-3" exact-active-class="active">
+                Admin
+              </router-link>
+            </li>
           </ul>
-          <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-3 mt-3 mt-lg-0">
-            <router-link to="/login" class="btn btn-outline-light btn-sm fw-semibold px-3">登录</router-link>
-            <router-link to="/register" class="btn btn-light btn-sm fw-semibold cta-btn px-3">注册</router-link>
+          <div class="nav-auth d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-3 mt-3 mt-lg-0">
+            <template v-if="isAuthenticated">
+              <div class="user-chip d-flex align-items-center gap-2 text-white-75 px-3 py-1">
+                <span class="user-avatar d-flex align-items-center justify-content-center">
+                  {{ userInitial }}
+                </span>
+                <div class="d-flex flex-column">
+                  <span class="user-name small fw-semibold">{{ displayName }}</span>
+                  <span v-if="isAdmin" class="role-badge small">管理员</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-light btn-sm fw-semibold cta-btn px-3" @click="handleLogout">
+                退出
+              </button>
+            </template>
+            <template v-else>
+              <router-link to="/login" class="btn btn-outline-light btn-sm fw-semibold px-3">登录</router-link>
+              <router-link to="/register" class="btn btn-light btn-sm fw-semibold cta-btn px-3">注册</router-link>
+            </template>
           </div>
         </div>
       </div>
@@ -98,6 +162,33 @@
 
 /* CTA 圆角胶囊 */
 .cta-btn{ border-radius: 999px; }
+
+.nav-auth .btn{ min-width: 72px; }
+.user-chip{
+  background: rgba(255,255,255,.15);
+  border-radius: 999px;
+  transition: background .2s ease;
+}
+.user-chip:hover{ background: rgba(255,255,255,.22); }
+.user-avatar{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.85);
+  color:#0d47a1;
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.user-name{
+  color: rgba(255,255,255,.85);
+}
+.role-badge{
+  color: rgba(255,255,255,.75);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .62rem !important;
+}
 
 /* 页脚渐变 + 文本颜色 */
 .app-footer{

@@ -12,13 +12,47 @@ const form = ref({
 })
 
 const statusMessage = ref('')
+const isSubmitting = ref(false)
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (form.value.password !== form.value.confirmPassword) {
     statusMessage.value = '两次输入的密码不一致，请重新确认。'
     return
   }
-  statusMessage.value = '待接入后端注册接口。当前仅展示表单。'
+
+  try {
+    isSubmitting.value = true
+    statusMessage.value = ''
+
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: form.value.email,
+        password: form.value.password,
+        full_name: form.value.name || null,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null)
+      statusMessage.value = error?.detail || '注册失败，请稍后再试。'
+      return
+    }
+
+    const data = await response.json()
+    statusMessage.value = `注册成功，欢迎你 ${data.full_name || data.email}！`
+
+    setTimeout(() => {
+      router.push('/login')
+    }, 1200)
+  } catch (error) {
+    statusMessage.value = '网络请求发生错误，请检查后端服务是否可用。'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const goToLogin = () => {
@@ -87,8 +121,8 @@ const goToLogin = () => {
             </div>
           </div>
 
-          <button class="btn btn-primary w-100 mt-4" type="submit">
-            注册
+          <button class="btn btn-primary w-100 mt-4" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? '注册中...' : '注册' }}
           </button>
         </form>
 
