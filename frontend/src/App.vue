@@ -39,8 +39,9 @@
               <router-link to="/chat" class="nav-link px-3" exact-active-class="active">Chat</router-link>
             </li>
           </ul>
-          <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
-            <router-link to="/upload" class="btn btn-light btn-sm fw-semibold cta-btn">开始使用</router-link>
+          <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-3 mt-3 mt-lg-0">
+            <router-link to="/login" class="btn btn-outline-light btn-sm fw-semibold px-3">登录</router-link>
+            <router-link to="/register" class="btn btn-light btn-sm fw-semibold cta-btn px-3">注册</router-link>
           </div>
         </div>
       </div>
@@ -55,43 +56,19 @@
 
     <!-- Footer -->
     <footer class="app-footer mt-auto">
-      <div class="container py-4">
-        <div class="row g-4">
-          <div class="col-12 col-md-5">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="logo">📑</span><span class="fw-semibold">Paper Assistant</span>
-            </div>
-            <p class="text-white-50 mb-0">
-              让学术写作更高效：上传论文、精准问答、引用标注与改写增强。
-            </p>
-          </div>
-          <div class="col-6 col-md-3">
-            <h6 class="text-uppercase text-white-50">产品</h6>
-            <ul class="list-unstyled small mb-0">
-              <li><router-link to="/upload" class="footer-link">文档上传</router-link></li>
-              <li><router-link to="/chat" class="footer-link">智能问答</router-link></li>
-              <li><a class="footer-link" href="#" aria-disabled="true">写作增强</a></li>
-            </ul>
-          </div>
-          <div class="col-6 col-md-4">
-            <h6 class="text-uppercase text-white-50">联系</h6>
-            <ul class="list-unstyled small mb-0">
-              <li><a class="footer-link" href="#" aria-disabled="true">Privacy</a></li>
-              <li><a class="footer-link" href="#" aria-disabled="true">Terms</a></li>
-              <li><a class="footer-link" href="#" aria-disabled="true">Support</a></li>
-            </ul>
-          </div>
+      <div class="container py-4 text-center">
+        <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+          <span class="logo">📑</span>
+          <span class="fw-semibold fs-5">Paper Assistant</span>
         </div>
-
-        <hr class="border-light-subtle my-4" />
-
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-          <small class="text-white-50">© 2025 Paper Assistant</small>
-          <div class="d-flex gap-3">
-            <a class="footer-link small" href="#" aria-label="Twitter">Twitter</a>
-            <a class="footer-link small" href="https://github.com/liumi63/paper-assistant" aria-label="GitHub">GitHub</a>
-          </div>
-        </div>
+        <a
+          class="footer-link btn btn-outline-light btn-sm px-3"
+          href="https://github.com/liumi63/paper-assistant"
+          target="_blank"
+          rel="noopener"
+        >
+          GitHub
+        </a>
       </div>
     </footer>
   </div>
@@ -124,13 +101,11 @@
 
 /* 页脚渐变 + 文本颜色 */
 .app-footer{
-  background:
-    radial-gradient(800px 400px at 15% 0%, rgba(255,255,255,.08), transparent 60%),
-    linear-gradient(180deg, #0b2a66 0%, #0f3b88 80%, #0b2a66 100%);
+  background: linear-gradient(180deg, #0c2f6f 0%, #0f3b88 100%);
   color:#fff;
 }
-.footer-link{ color:#d7e3ff; text-decoration:none; }
-.footer-link:hover{ color:#fff; text-decoration:underline; }
+.footer-link{ color:rgba(215,227,255,.92); text-decoration:none; }
+.footer-link:hover{ color:#0c2f6f; background-color:#fff; }
 
 /* 轻阴影的表情 Logo */
 .logo{ filter: drop-shadow(0 2px 8px rgba(0,0,0,.25)); }
